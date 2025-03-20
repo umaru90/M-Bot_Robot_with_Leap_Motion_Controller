@@ -1,0 +1,61 @@
+import Leap
+import sys
+import time
+
+class CommandListener(Leap.Listener):
+    def __init__(self):
+        super().__init__()
+        self.last_command = "stop"
+        self.min_velocity = 150  # Kecepatan minimum untuk deteksi gerakan (sesuaikan jika perlu)
+
+    def on_frame(self, controller):
+        frame = controller.frame()
+        hands = frame.hands
+
+        if not hands.is_empty:
+            hand = hands[0]
+            velocity = hand.palm_velocity
+
+            # Mendapatkan komponen kecepatan
+            x_vel = velocity.x
+            z_vel = velocity.z
+
+            command = self._determine_command(x_vel, z_vel)
+        else:
+            command = "stop"
+
+        if command != self.last_command:
+            self.last_command = command
+            print(f"Perintah : {command}")
+
+    def _determine_command(self, x_vel, z_vel):
+        # Prioritas gerakan depan/belakang
+        if abs(z_vel) > abs(x_vel):
+            if z_vel < -self.min_velocity:
+                return "maju"
+            elif z_vel > self.min_velocity:
+                return "mundur"
+        else:
+            if x_vel > self.min_velocity:
+                return "kanan"
+            elif x_vel < -self.min_velocity:
+                return "kiri"
+        
+        return "stop"
+
+def main():
+    listener = CommandListener()
+    controller = Leap.Controller()
+
+    controller.add_listener(listener)
+
+    print("Program Leap Motion Controller dimulai...")
+    print("Gerakkan tangan di atas sensor Leap Motion")
+    try:
+        while True:
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        controller.remove_listener(listener)
+
+if __name__ == "__main__":
+    main()
