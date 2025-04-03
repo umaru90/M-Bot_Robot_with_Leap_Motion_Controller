@@ -33,6 +33,11 @@ class MyListener(leap.Listener):
         
         # Periksa setiap tangan yang terdeteksi
         for hand in event.hands:
+            # Tentukan apakah tangan kiri atau kanan berdasarkan posisi x
+            # Asumsi: tangan kiri memiliki posisi x kurang dari 0, tangan kanan lebih dari 0
+            is_left = hand.palm_position[0] < 0
+            hand_type = "Left Hand" if is_left else "Right Hand"
+            
             # Ambil jari-jari dari tangan
             thumb = hand.thumb
             index = hand.index
@@ -50,17 +55,24 @@ class MyListener(leap.Listener):
             # Hitung jumlah jari yang terentang
             extended_fingers = sum([thumb_extended, index_extended, middle_extended, ring_extended, pinky_extended])
             
-            # Tentukan perintah berdasarkan pola jari
-            if extended_fingers == 5:
-                command = "maju"
-            elif thumb_extended and not index_extended and not middle_extended and not ring_extended and not pinky_extended:
-                command = "mundur"
-            elif thumb_extended and index_extended and not middle_extended and not ring_extended and not pinky_extended:
-                command = "kiri"
-            elif thumb_extended and index_extended and middle_extended and not ring_extended and not pinky_extended:
-                command = "kanan"
-            elif extended_fingers == 0:
-                command = "stop"
+            # Tentukan perintah berdasarkan tangan dan pola jari
+            if is_left:  # Tangan kiri
+                if thumb_extended and index_extended and not middle_extended and not ring_extended and not pinky_extended:
+                    command = "kiri"
+                elif thumb_extended and index_extended and not middle_extended and ring_extended and pinky_extended:
+                    command = "mundur"
+                elif extended_fingers == 0:
+                    command = "stop"
+            else:  # Tangan kanan
+                if thumb_extended and index_extended and not middle_extended and not ring_extended and not pinky_extended:
+                    command = "kanan"
+                elif thumb_extended and index_extended and not middle_extended and ring_extended and pinky_extended:
+                    command = "maju"
+                elif extended_fingers == 0:
+                    command = "stop"
+            
+            # Tampilkan debug info (opsional)
+            # print(f"Hand: {hand_type}, Extended fingers: {extended_fingers}, Command: {command}")
         
         # Hanya tampilkan perintah jika berbeda dari perintah sebelumnya
         if command != self.last_command:
@@ -74,13 +86,16 @@ def main():
     connection = leap.Connection()
     connection.add_listener(my_listener)
 
-    print("Program kontrol navigasi dengan pola jari dimulai.")
+    print("Program kontrol navigasi dengan dua tangan dimulai.")
     print("\nPetunjuk perintah:")
-    print("- Semua jari terentang (5 jari): MAJU")
-    print("- Hanya jempol terentang: MUNDUR")
-    print("- Jempol dan telunjuk terentang: KIRI")
-    print("- Jempol dan jari tengah terentang: KANAN")
-    print("- Tangan dikepal (tidak ada jari terentang): STOP")
+    print("Tangan Kiri:")
+    print("- Jempol dan Telunjuk terentang: KIRI")
+    print("- Jempol, Telunjuk, Manis, dan Kelingking terentang: MUNDUR")
+    print("- Tangan dikepal: STOP")
+    print("\nTangan Kanan:")
+    print("- Jempol dan Telunjuk terentang: KANAN")
+    print("- Jempol, Telunjuk, Manis, dan Kelingking terentang: MAJU")
+    print("- Tangan dikepal: STOP")
     print("\nTekan Ctrl+C untuk keluar.")
     print("\nOutput perintah:")
 
